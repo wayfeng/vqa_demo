@@ -2,6 +2,6 @@ einops
 huggingface-hub==0.24.6
 gradio==4.42.0
 tiktoken==0.7.0
-transformers==4.44.2
-transformers_stream_generator==0.0.5
+transformers==4.32
+transformers_stream_generator==0.0.4
 trl==0.9.6

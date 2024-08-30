@@ -1,8 +1,3 @@
-# Copyright (c) Alibaba Cloud.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
 """A simple web interactive chat demo based on gradio."""
 
 from argparse import ArgumentParser
@@ -21,6 +16,7 @@ from ipex_llm.transformers import AutoModelForCausalLM
 torch.manual_seed(1234)
 
 MODEL_ID = 'Qwen/Qwen-VL-Chat'
+MODEL_PATH = Path('./models/Qwen-VL-Chat')
 BOX_TAG_PATTERN = r"<box>([\s\S]*?)</box>"
 PUNCTUATION = "！？。＂＃＄％＆＇（）＊＋，－／：；＜＝＞＠［＼］＾＿｀｛｜｝～｟｠｢｣､、〃》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿–—‘’‛“”„‟…‧﹏."
 
@@ -32,18 +28,18 @@ def _get_args():
     parser.add_argument("--server-name", type=str, default="127.0.0.1",
                         help="Demo server name.")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def _load_model_tokenizer(args):
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
-
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, 
-                load_in_4bit=True, 
-                trust_remote_code=True, 
-                modules_to_not_convert=['c_fc', 'out_proj'],
-                torch_dtype=torch.float32).eval().to('xpu')
+    if MODEL_PATH.exists():
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
+        model = AutoModelForCausalLM.load_low_bit(MODEL_PATH, trust_remote_code=True,
+                            modules_to_not_convert=['c_fc', 'out_proj']).eval().to('xpu')
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID, load_in_4bit=True, trust_remote_code=True, 
+                    modules_to_not_convert=['c_fc', 'out_proj'], torch_dtype=torch.float32).eval().to('xpu')
 
     return model, tokenizer
 
@@ -195,13 +191,7 @@ def _launch_demo(args, model, tokenizer):
     )
 
 
-def main():
-    args = _get_args()
-
-    model, tokenizer = _load_model_tokenizer(args)
-
-    _launch_demo(args, model, tokenizer)
-
-
 if __name__ == '__main__':
-    main()
+    args = _get_args()
+    model, tokenizer = _load_model_tokenizer(args)
+    _launch_demo(args, model, tokenizer)
